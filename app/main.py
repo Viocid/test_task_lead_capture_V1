@@ -1,0 +1,29 @@
+import logging
+
+from fastapi import FastAPI
+
+from app.api.routers import main_router
+from app.core.base import Lead  # noqa
+from app.core.config import settings
+from app.core.db import Base, engine
+
+logging.basicConfig(
+    level=logging.INFO,
+    format=settings.logging_format,
+    datefmt=settings.logging_dt_format,
+)
+
+app = FastAPI(title=settings.app_title, description=settings.app_description)
+
+app.include_router(main_router)
+
+
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
